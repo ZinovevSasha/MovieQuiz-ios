@@ -2,9 +2,9 @@ import Foundation
 import UIKit
 
 extension UIColor {
-    
+    // swiftlint:disable force_unwrapping
     static var ypBackground: UIColor {
-       UIColor(named: "ypBackground")!
+        UIColor(named: "ypBackground")!
     }
     static var ypBlack: UIColor {
         UIColor(named: "ypBlack")!
@@ -21,5 +21,5 @@ extension UIColor {
     static var ypWhite: UIColor {
         UIColor(named: "ypWhite")!
     }
+    // swiftlint:enable force_unwrapping
 }
-
