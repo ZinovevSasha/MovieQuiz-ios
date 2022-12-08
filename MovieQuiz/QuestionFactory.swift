@@ -35,9 +35,9 @@ class QuestionFactory: QuestionFactoryProtocol {
     func requestNextQuestion() {
         let index = (0..<self.movies.count).randomElement() ?? 0
         guard let question = self.movies[safe: index] else { return }
-        let randomNumber = Double.random(in: 5.0...9.1)
-        let correctAnswer = (question.rating > randomNumber)
-        let text = "Рейтинг этого фильма больше чем \(Int(randomNumber))?"
+        let randomNumber = Int.random(in: 6...9)
+        let correctAnswer = (question.rating > Double(randomNumber))
+        let text = "Рейтинг этого фильма больше чем \(randomNumber)?"
 
         networkClient.fetch(url: question.resizedImageURL) { result in
             DispatchQueue.main.async { [weak self] in
@@ -50,7 +50,7 @@ class QuestionFactory: QuestionFactoryProtocol {
                         correctAnswer: correctAnswer)
                     self.delegate?.didReceiveNextQuestion(question: quizQuestion)
                 case .failure(let error):
-                    self.delegate?.didFailToLoadImageFromServer(with: error)
+                    self.delegate?.didFailToLoadDataFromServer(with: error)
                 }
             }
         }

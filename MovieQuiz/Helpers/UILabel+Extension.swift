@@ -6,7 +6,7 @@ extension UILabel {
         UIView.transition(
             with: self,
             duration: duration,
-            options: .transitionFlipFromRight,
+            options: .transitionCrossDissolve,
             animations: nil,
             completion: nil)
     }
@@ -17,7 +17,7 @@ extension UIStackView {
         UIView.transition(
             with: self,
             duration: duration,
-            options: .transitionFlipFromRight,
+            options: .transitionCrossDissolve,
             animations: nil,
             completion: nil)
     }
