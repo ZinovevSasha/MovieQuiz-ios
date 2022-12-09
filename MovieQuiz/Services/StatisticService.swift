@@ -5,35 +5,31 @@ protocol StatisticService: AnyObject {
     var totalAccuracy: Float { get }
     var gamesCount: Int { get }
     var bestGame: GameRecord { get }
-    var allResults: [Int] { get }
-}
-
-struct GameRecord: Codable, Comparable {
-    static func < (lhs: GameRecord, rhs: GameRecord) -> Bool {
-        return lhs.correct < rhs.correct
-    }
-    let correct: Int
-    let total: Int
-    let date: Date
 }
 
 final class StatisticServiceImplementation: StatisticService {
+    private let userDefaults = UserDefaults.standard
+
+    private enum Keys: String {
+        case bestGame, bestResult
+    }
+
     func store(correct count: Int, total amount: Int) {
         let possibleBestGame = GameRecord(correct: count, total: amount, date: Date())
         if bestGame < possibleBestGame {
             bestGame = possibleBestGame
         }
-        allResults.append(count)
+        bestResultsArray.append(count)
     }
 
     var totalAccuracy: Float {
-        let sumOfAllResults = allResults.reduce(0, +)
-        let accuracy = Float(sumOfAllResults * 100) / Float((bestGame.total) * allResults.count)
+        let sumOfAllResults = bestResultsArray.reduce(0, +)
+        let accuracy = Float(sumOfAllResults * 100) / Float((bestGame.total) * bestResultsArray.count)
         return accuracy
     }
 
     var gamesCount: Int {
-        return allResults.count
+        return bestResultsArray.count
     }
 
     private(set) var bestGame: GameRecord {
@@ -52,18 +48,12 @@ final class StatisticServiceImplementation: StatisticService {
         }
     }
 
-    private(set) var allResults: [Int] {
+    private(set) var bestResultsArray: [Int] {
         get {
-            return userDefaults.object(forKey: Keys.allResults.rawValue) as? [Int] ?? []
+            return userDefaults.object(forKey: Keys.bestResult.rawValue) as? [Int] ?? [Int]()
         }
         set {
-            userDefaults.set(newValue, forKey: Keys.allResults.rawValue)
+            userDefaults.set(newValue, forKey: Keys.bestResult.rawValue)
         }
-    }
-
-    private let userDefaults = UserDefaults.standard
-
-    private enum Keys: String {
-        case bestGame, allResults
     }
 }

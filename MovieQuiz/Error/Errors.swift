@@ -8,7 +8,7 @@ enum Errors: String, Error {
     case invalidURL
     case parsingError
     case exceedAPIRequestLimit
-    case testError = "Test Error"
+    case testError
 }
 
 extension Errors: LocalizedError {

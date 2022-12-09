@@ -94,20 +94,32 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         activityIndicator.startAnimating()
     }
 
+    func enableButtons() {
+        yesButton.isEnabled = true
+        noButton.isEnabled = true
+    }
+
     func highlightImageBorder(isCorrectAnswer: Bool) {
         previewImage.layer.borderWidth = 8
         previewImage.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+    }
+
+    private func disableButtons() {
+        yesButton.isEnabled = false
+        noButton.isEnabled = false
     }
 
     // buttons action
     @objc private func noButtonPressed(sender: UIButton) {
         showLoadingIndicator()
         presenter.noButtonPressed()
+        disableButtons()
     }
 
     @objc private func yesButtonPressed(sender: UIButton) {
         showLoadingIndicator()
         presenter.yesButtonPressed()
+        disableButtons()
     }
 
     // MARK: - create elements and constraints on screen

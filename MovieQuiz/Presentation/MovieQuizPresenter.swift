@@ -1,15 +1,17 @@
 import UIKit
 
 final class MovieQuizPresenter {
-    private var currentQuestionIndex = 0
-    private var currentQuestion: QuizQuestion?
     private var correctAnswers = 0
     private let questionsAmount = 10
+    private var currentQuestionIndex = 0
+    private var currentQuestion: QuizQuestion?
+
     // MARK: - Dependencies
     private var statisticService: StatisticService?
     private var questionsFactory: QuestionFactoryProtocol?
-    private weak var viewController: MovieQuizViewController?
-    init(viewController: MovieQuizViewController) {
+    private weak var viewController: MovieQuizViewControllerProtocol?
+
+    init(viewController: MovieQuizViewControllerProtocol?) {
         self.viewController = viewController
         statisticService = StatisticServiceImplementation()
         questionsFactory = QuestionFactory(delegate: self)
@@ -40,7 +42,7 @@ extension MovieQuizPresenter {
         currentQuestionIndex += 1
     }
 
-    private func convert(model: QuizQuestion) -> QuizStepViewModel {
+    func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
             question: model.text,
             image: UIImage(data: model.image) ?? UIImage(),
@@ -56,7 +58,9 @@ extension MovieQuizPresenter {
     }
 
     private func proceedWithAnswer(isCorrect: Bool) {
-        didAnswer(isCorrect: isCorrect)
+        if isCorrect {
+            correctAnswers.increment()
+        }
         viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
@@ -64,40 +68,33 @@ extension MovieQuizPresenter {
         }
     }
 
-    private func didAnswer(isCorrect: Bool) {
-        if isCorrect {
-            correctAnswers.increment()
-        }
-    }
-
     private func proceedToNextQuestionOrResults() {
-        if self.isLastQuestion() {
+        if isLastQuestion() {
             proceedToResultOfTheGame()
         } else {
-            self.switchToNextQuestion()
+            switchToNextQuestion()
             questionsFactory?.requestNextQuestion()
         }
     }
 
     private func proceedToResultOfTheGame() {
-        guard let statisticService = statisticService else {
-            return
+        if let statisticService = statisticService {
+            statisticService.store(correct: correctAnswers, total: questionsAmount)
+            let dateAndTime = statisticService.bestGame.date.dateTimeString
+
+            let resultOfTheGame = QuizResultsViewModel(
+                title: "Этот раунд окончен!",
+                message:
+                    """
+                    Ваш результат: \(correctAnswers)/\(questionsAmount)
+                    Количество сыгранных квизов: \(statisticService.gamesCount)
+                    Рекорд: \(statisticService.bestGame.correct)/\(questionsAmount) (\(dateAndTime))
+                    Средняя точность: \(statisticService.totalAccuracy.myOwnRounded)%
+                    """,
+                buttonText: "Сыграть еще раз")
+
+            viewController?.show(quiz: resultOfTheGame)
         }
-        statisticService.store(correct: correctAnswers, total: questionsAmount)
-        let dateAndTime = statisticService.bestGame.date.dateTimeString
-
-        let resultOfTheGame = QuizResultsViewModel(
-            title: "Этот раунд окончен!",
-            message:
-            """
-            Ваш результат: \(correctAnswers)/\(questionsAmount)
-            Количество сыгранных квизов: \(statisticService.gamesCount)
-            Рекорд: \(statisticService.bestGame.correct)/\(questionsAmount) (\(dateAndTime))
-            Средняя точность: \(statisticService.totalAccuracy.myOwnRounded)%
-            """,
-            buttonText: "Сыграть еще раз")
-
-        viewController?.show(quiz: resultOfTheGame)
     }
 }
 
@@ -115,6 +112,7 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
         let viewModel = convert(model: question)
         currentQuestion = question
         viewController?.hideLoadingIndicator()
+        viewController?.enableButtons()
 
         DispatchQueue.main.async { [weak self] in
             self?.viewController?.show(quiz: viewModel)

@@ -1,10 +1,3 @@
-//
-//  MovieQuizTests.swift
-//  MovieQuizTests
-//
-//  Created by Александр Зиновьев on 06.12.2022.
-//
-
 import XCTest
 @testable import MovieQuiz
 
