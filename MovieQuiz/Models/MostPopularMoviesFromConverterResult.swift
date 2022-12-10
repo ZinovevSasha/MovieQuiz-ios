@@ -1,7 +1,6 @@
 import Foundation
 
 struct FromOptionalResultToNonOptional {
-    
     func convert(result: MostPopularMoviesResult.OneMovieResult?) -> OneMovie? {
         guard
             let title       = result?.title,
@@ -9,7 +8,6 @@ struct FromOptionalResultToNonOptional {
         else {
             return nil
         }
-        
         var rating: Double {
             Double(result?.imDbRating ?? "7") ?? 7
         }

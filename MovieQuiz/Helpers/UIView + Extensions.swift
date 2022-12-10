@@ -1,16 +1,16 @@
 import UIKit
 
-extension UIView { // extension for safe area
-  var safeTopAnchor: NSLayoutYAxisAnchor {
-      return safeAreaLayoutGuide.topAnchor
-  }
-  var safeLeadingAnchor: NSLayoutXAxisAnchor {
+extension UIView {
+    var safeTopAnchor: NSLayoutYAxisAnchor {
+        return safeAreaLayoutGuide.topAnchor
+    }
+    var safeLeadingAnchor: NSLayoutXAxisAnchor {
         return safeAreaLayoutGuide.leadingAnchor
-}
-  var safeTrailingAnchor: NSLayoutXAxisAnchor {
-    return safeAreaLayoutGuide.trailingAnchor
-}
-  var safeBottomAnchor: NSLayoutYAxisAnchor {
-      return safeAreaLayoutGuide.bottomAnchor
-  }
+    }
+    var safeTrailingAnchor: NSLayoutXAxisAnchor {
+        return safeAreaLayoutGuide.trailingAnchor
+    }
+    var safeBottomAnchor: NSLayoutYAxisAnchor {
+        return safeAreaLayoutGuide.bottomAnchor
+    }
 }

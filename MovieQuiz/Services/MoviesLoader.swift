@@ -1,8 +1,7 @@
 import Foundation
 
 struct MoviesLoader: MoviesLoadingProtocol {
-    
-    typealias Handler = (Result<[OneMovie],Errors>)->Void
+    typealias Handler = (Result<[OneMovie], Errors>) -> Void
     // MARK: - NetworkClient
     let networkClient: NetworkRouting
     init(networkClient: NetworkRouting = NetworkClient()) {
@@ -14,7 +13,7 @@ struct MoviesLoader: MoviesLoadingProtocol {
         }
         return url
     }
-    
+
     func loadMovies(handler: @escaping Handler) {
         networkClient.fetch(url: mostPopularMoviesUrl) { result in
             switch result {
@@ -24,7 +23,7 @@ struct MoviesLoader: MoviesLoadingProtocol {
                 do {
                     let model = try decoder.decode(MostPopularMoviesResult.self, from: data)
                     guard let errorMessage = model.errorMessage,
-                          errorMessage.isEmpty
+                        errorMessage.isEmpty
                     else {
                         handler(.failure(.exceedAPIRequestLimit))
                         return
@@ -44,4 +43,3 @@ struct MoviesLoader: MoviesLoadingProtocol {
         }
     }
 }
-
