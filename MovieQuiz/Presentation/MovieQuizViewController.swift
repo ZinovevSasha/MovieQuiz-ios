@@ -1,6 +1,13 @@
 import UIKit
 
-final class MovieQuizViewController: UIViewController, MovieQuizViewControllerProtocol {
+// What i tell presenter to do
+protocol MovieQuizPresenterProtocol {
+    func restartGame()
+    func noButtonPressed()
+    func yesButtonPressed()
+}
+
+final class MovieQuizViewController: UIViewController {
     // MARK: - UIElements
     private let questionTitleLabel = UILabel()
     private let indexLabel = UILabel()
@@ -29,101 +36,38 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     private let stackViewForLabels = UIStackView()
     private let stackViewForAll = UIStackView()
     override var preferredStatusBarStyle: UIStatusBarStyle { .lightContent }
-
+    
     // MARK: - Dependencies
     // swiftlint:disable:next implicitly_unwrapped_optional
-    private var presenter: MovieQuizPresenter!
-
+    private var presenter: MovieQuizPresenterProtocol!
+    
     // MARK: - viewDidLoad
     override func viewDidLoad() {
         super.viewDidLoad()
-        presenter = MovieQuizPresenter(viewController: self)
+        presenter = MovieQuizPresenter(
+            view: self,
+            questionsFactory: QuestionFactory(),
+            statisticService: StatisticServiceImplementation()
+        )
+        
         createUIElements()
         setUpScreen()
         setUpConstraints()
-        showLoadingIndicator()
     }
-
-    // MARK: - Functions to handle "state machine"
-    func show(quiz step: QuizStepViewModel) {
-        indexLabel.text = step.questionNumber
-        previewImage.image = step.image
-        questionLabel.text = step.question
-
-        questionLabel.animateQuestion()
-        stackViewForPreviewImage.animateImage()
-    }
-
-    func show(quiz result: QuizResultsViewModel) {
-        let alertController = UIAlertController(
-            title: result.title,
-            message: result.message,
-            preferredStyle: .alert)
-
-        let action = UIAlertAction(
-            title: result.buttonText,
-            style: .default) { [weak self] _ in
-                self?.presenter.restartGame()
-        }
-        alertController.addAction(action)
-        self.present(alertController, animated: true)
-    }
-
-    func showNetworkError(message: String) {
-        let alertController = UIAlertController(
-            title: "Ошибка",
-            message: message,
-            preferredStyle: .alert)
-
-        let action = UIAlertAction(
-            title: "Попробовать еще раз",
-            style: .default) { [weak self] _ in
-                self?.presenter.restartGame()
-        }
-        alertController.addAction(action)
-        present(alertController, animated: true)
-    }
-
-    func hideLoadingIndicator() {
-        activityIndicator.stopAnimating()
-        activityIndicator.isHidden = true
-        previewImage.layer.borderWidth = 0
-    }
-
-    func showLoadingIndicator() {
-        activityIndicator.startAnimating()
-    }
-
-    func enableButtons() {
-        yesButton.isEnabled = true
-        noButton.isEnabled = true
-    }
-
-    func highlightImageBorder(isCorrectAnswer: Bool) {
-        previewImage.layer.borderWidth = 8
-        previewImage.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
-    }
-
-    private func disableButtons() {
-        yesButton.isEnabled = false
-        noButton.isEnabled = false
-    }
-
+    
     // buttons action
     @objc private func noButtonPressed(sender: UIButton) {
-        showLoadingIndicator()
         presenter.noButtonPressed()
-        disableButtons()
     }
-
+    
     @objc private func yesButtonPressed(sender: UIButton) {
-        showLoadingIndicator()
         presenter.yesButtonPressed()
-        disableButtons()
     }
+}
 
-    // MARK: - create elements and constraints on screen
-    private func createUIElements() {
+private extension MovieQuizViewController {
+    // MARK: - UI
+    func createUIElements() {
         view.backgroundColor = .ypBlack
         makeAppearance(of: noButton, title: "Нет", action: #selector(noButtonPressed(sender: )))
         makeAppearance(of: yesButton, title: "Да", action: #selector(yesButtonPressed(sender: )))
@@ -146,7 +90,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         makeAppearance(of: stackViewForAll, axis: .vertical, distribution: .fill)
     }
 
-    private func setUpScreen() {
+    func setUpScreen() {
         [
             previewImage, stackViewForAll,
             noButton, yesButton, indexLabel,
@@ -173,7 +117,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         view.addSubview(activityIndicator)
     }
 
-    private func setUpConstraints() {
+    func setUpConstraints() {
         NSLayoutConstraint.activate([
             // set constraints for (stackViewForAll)
             stackViewForAll.leadingAnchor.constraint(
@@ -215,7 +159,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
     }
 
     // MARK: - Helper Function
-    private func makeAppearance(
+    func makeAppearance(
         of button: UIButton,
         title: String,
         font: UIFont = .ysMedium ?? UIFont(),
@@ -224,7 +168,8 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         titleColor: UIColor = .ypBlack,
         cornerRadius: CGFloat = 15,
         action: Selector
-    ) { button.backgroundColor = backgroundColor
+    ) {
+        button.backgroundColor = backgroundColor
         button.layer.cornerRadius = cornerRadius
         button.setTitle(title, for: .normal)
         button.titleLabel?.font = font
@@ -233,7 +178,7 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         button.addTarget(self, action: action, for: .touchUpInside)
     }
 
-    private func makeAppearance(
+    func makeAppearance(
         of label: UILabel,
         text: String,
         textColor: UIColor = .ypWhite,
@@ -246,9 +191,9 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         label.font = font
         label.numberOfLines = numberOfLines
         label.textAlignment = textAlignment ?? .natural
-        }
+    }
 
-    private func makeAppearance(
+    func makeAppearance(
         of stackView: UIStackView,
         axis: NSLayoutConstraint.Axis,
         distribution: UIStackView.Distribution,
@@ -259,5 +204,71 @@ final class MovieQuizViewController: UIViewController, MovieQuizViewControllerPr
         stackView.distribution = distribution
         stackView.alignment = alignment
         stackView.spacing = spacing
+    }
+}
+
+extension MovieQuizViewController: MovieQuizViewControllerProtocol {
+    func show(quiz step: QuizStepViewModel) {
+        indexLabel.text = step.questionNumber
+        previewImage.image = step.image
+        questionLabel.text = step.question
+
+        indexLabel.animate()
+        questionLabel.animate()
+        stackViewForPreviewImage.animate()
+    }
+
+    func show(quiz result: QuizResultsViewModel) {
+        let alertController = UIAlertController(
+            title: result.title,
+            message: result.message,
+            preferredStyle: .alert)
+
+        let action = UIAlertAction(
+            title: result.buttonText,
+            style: .default) { [weak self] _ in
+                self?.presenter.restartGame()
+        }
+        alertController.addAction(action)
+        self.present(alertController, animated: true)
+    }
+    
+    func highlightImageBorder(isCorrectAnswer: Bool) {
+        previewImage.layer.borderWidth = 8
+        previewImage.layer.borderColor = isCorrectAnswer ? UIColor.ypGreen.cgColor : UIColor.ypRed.cgColor
+    }
+    
+    func showNetworkError(message: String) {
+        let alertController = UIAlertController(
+            title: "Ошибка",
+            message: message,
+            preferredStyle: .alert)
+
+        let action = UIAlertAction(
+            title: "Попробовать еще раз",
+            style: .default) { [weak self] _ in
+                self?.presenter.restartGame()
+        }
+        alertController.addAction(action)
+        present(alertController, animated: true)
+    }
+
+    func hideLoadingIndicator() {
+        activityIndicator.stopAnimating()
+        previewImage.layer.borderWidth = 0
+    }
+
+    func showLoadingIndicator() {
+        activityIndicator.startAnimating()
+    }
+
+    func enableButtons() {
+        yesButton.isEnabled = true
+        noButton.isEnabled = true
+    }
+
+    func disableButtons() {
+        yesButton.isEnabled = false
+        noButton.isEnabled = false
     }
 }

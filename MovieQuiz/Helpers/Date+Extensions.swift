@@ -9,8 +9,3 @@ private let dateTimeDefaultFormatter: DateFormatter = {
 extension Date {
     var dateTimeString: String { dateTimeDefaultFormatter.string(from: self) }
 }
-
-
-extension Float {
-    var myOwnRounded: String { String(format: "%.2f", self)}
-}

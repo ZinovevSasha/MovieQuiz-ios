@@ -1,48 +1,50 @@
 import UIKit
 
+protocol MovieQuizViewControllerProtocol: AnyObject {
+    func show(quiz step: QuizStepViewModel)
+    func show(quiz result: QuizResultsViewModel)
+    func highlightImageBorder(isCorrectAnswer: Bool)
+    func showNetworkError(message: String)
+    func hideLoadingIndicator()
+    func showLoadingIndicator()
+    func enableButtons()
+    func disableButtons()
+}
+
 final class MovieQuizPresenter {
     private var correctAnswers = 0
     private let questionsAmount = 10
     private var currentQuestionIndex = 0
     private var currentQuestion: QuizQuestion?
 
-    // MARK: - Dependencies
-    private var statisticService: StatisticService?
+    // MARK: - Dependency injections
+    private weak var view: MovieQuizViewControllerProtocol?
     private var questionsFactory: QuestionFactoryProtocol?
-    private weak var viewController: MovieQuizViewControllerProtocol?
-
-    init(viewController: MovieQuizViewControllerProtocol?) {
-        self.viewController = viewController
-        statisticService = StatisticServiceImplementation()
-        questionsFactory = QuestionFactory(delegate: self)
+    private var statisticService: StatisticService?
+    
+    init(
+        view: MovieQuizViewControllerProtocol?,
+        questionsFactory: QuestionFactoryProtocol?,
+        statisticService: StatisticService?
+    ) {
+        self.view = view
+        self.questionsFactory = questionsFactory
+        self.statisticService = statisticService
+        
+        view?.showLoadingIndicator()
+        questionsFactory?.setDelegate(delegate: self)
         questionsFactory?.loadData()
     }
 
-    func isLastQuestion() -> Bool {
+    private func isLastQuestion() -> Bool {
         currentQuestionIndex == questionsAmount - 1
     }
 
-    func restartGame() {
-        currentQuestionIndex = 0
-        correctAnswers = 0
-        questionsFactory?.loadData()
-    }
-
-    func noButtonPressed() {
-        didAnswer(isYes: false)
-    }
-
-    func yesButtonPressed() {
-        didAnswer(isYes: true)
-    }
-}
-
-extension MovieQuizPresenter {
     private func switchToNextQuestion() {
         currentQuestionIndex += 1
     }
 
-    func convert(model: QuizQuestion) -> QuizStepViewModel {
+    private func convert(model: QuizQuestion) -> QuizStepViewModel {
         QuizStepViewModel(
             question: model.text,
             image: UIImage(data: model.image) ?? UIImage(),
@@ -61,7 +63,7 @@ extension MovieQuizPresenter {
         if isCorrect {
             correctAnswers.increment()
         }
-        viewController?.highlightImageBorder(isCorrectAnswer: isCorrect)
+        view?.highlightImageBorder(isCorrectAnswer: isCorrect)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { [weak self] in
             self?.proceedToNextQuestionOrResults()
@@ -93,8 +95,27 @@ extension MovieQuizPresenter {
                     """,
                 buttonText: "Сыграть еще раз")
 
-            viewController?.show(quiz: resultOfTheGame)
+            view?.show(quiz: resultOfTheGame)
         }
+    }
+}
+extension MovieQuizPresenter: MovieQuizPresenterProtocol {
+    func restartGame() {
+        currentQuestionIndex = 0
+        correctAnswers = 0
+        questionsFactory?.loadData()
+    }
+
+    func noButtonPressed() {
+        didAnswer(isYes: false)
+        view?.disableButtons()
+        view?.showLoadingIndicator()
+    }
+
+    func yesButtonPressed() {
+        didAnswer(isYes: true)
+        view?.disableButtons()
+        view?.showLoadingIndicator()
     }
 }
 
@@ -104,18 +125,16 @@ extension MovieQuizPresenter: QuestionFactoryDelegate {
     }
 
     func didFailToLoadDataFromServer(with error: Errors) {
-        viewController?.showLoadingIndicator()
-        viewController?.showNetworkError(message: error.errorDescription ?? "Неизвестная ошибка")
+        view?.showLoadingIndicator()
+        view?.showNetworkError(message: error.errorDescription ?? "Неизвестная ошибка")
     }
 
     func didReceiveNextQuestion(question: QuizQuestion) {
         let viewModel = convert(model: question)
         currentQuestion = question
-        viewController?.hideLoadingIndicator()
-        viewController?.enableButtons()
-
-        DispatchQueue.main.async { [weak self] in
-            self?.viewController?.show(quiz: viewModel)
-        }
+        
+        view?.hideLoadingIndicator()
+        view?.enableButtons()
+        view?.show(quiz: viewModel)
     }
 }

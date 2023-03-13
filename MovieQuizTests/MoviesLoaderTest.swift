@@ -4,11 +4,11 @@ import XCTest
 struct StubNetworkClient: NetworkRouting {
     let emulateError: Bool
 
-    func fetch(url: URL, handler: @escaping (Result<Data, Errors>) -> Void) {
+    func fetch(url: URL, completion: @escaping (Result<Data, Errors>) -> Void) {
         if emulateError {
-            handler(.failure(.testError))
+            completion(.failure(.testError))
         } else {
-            handler(.success(expectedResponse))
+            completion(.success(expectedResponse))
         }
     }
 

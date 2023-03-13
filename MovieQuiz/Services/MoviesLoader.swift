@@ -1,5 +1,9 @@
 import Foundation
 
+protocol MoviesLoadingProtocol {
+    func loadMovies(handler: @escaping (Result<[OneMovie], Errors>) -> Void)
+}
+
 struct MoviesLoader: MoviesLoadingProtocol {
     typealias Handler = (Result<[OneMovie], Errors>) -> Void
     // MARK: - NetworkClient
@@ -16,6 +20,11 @@ struct MoviesLoader: MoviesLoadingProtocol {
 
     func loadMovies(handler: @escaping Handler) {
         networkClient.fetch(url: mostPopularMoviesUrl) { result in
+            let fulfillCompletion: (Result<[OneMovie], Errors>) -> Void = { result in
+                DispatchQueue.main.async {
+                    handler(result)
+                }
+            }
             switch result {
             case .success(let data):
                 let decoder = JSONDecoder()
@@ -25,20 +34,20 @@ struct MoviesLoader: MoviesLoadingProtocol {
                     guard let errorMessage = model.errorMessage,
                         errorMessage.isEmpty
                     else {
-                        handler(.failure(.exceedAPIRequestLimit))
+                        fulfillCompletion(.failure(.exceedAPIRequestLimit))
                         return
                     }
                     let items = model.items.compactMap { converter.convert(result: $0) }
                     guard !items.isEmpty else {
-                        handler(.failure(.itemsEmpty))
+                        fulfillCompletion(.failure(.itemsEmpty))
                         return
                     }
-                    handler(.success(items))
+                    fulfillCompletion(.success(items))
                 } catch {
-                    handler(.failure(.parsingError))
+                    fulfillCompletion(.failure(.parsingError))
                 }
             case .failure(let failure):
-                handler(.failure(failure))
+                fulfillCompletion(.failure(failure))
             }
         }
     }
