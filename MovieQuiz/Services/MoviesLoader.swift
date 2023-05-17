@@ -3,7 +3,7 @@ import Foundation
 protocol MoviesLoadingProtocol {
     func loadMovies(handler: @escaping (Result<[OneMovie], Errors>) -> Void)
 }
-
+/*
 struct MoviesLoader: MoviesLoadingProtocol {
     typealias Handler = (Result<[OneMovie], Errors>) -> Void
     // MARK: - NetworkClient
@@ -49,6 +49,38 @@ struct MoviesLoader: MoviesLoadingProtocol {
             case .failure(let failure):
                 fulfillCompletion(.failure(failure))
             }
+        }
+    }
+}
+*/
+
+struct MoviesLoader: MoviesLoadingProtocol {
+    typealias Handler = (Result<[OneMovie], Errors>) -> Void
+    func loadMovies(handler: @escaping Handler) {
+        let fulfillCompletion: (Result<[OneMovie], Errors>) -> Void = { result in
+            DispatchQueue.main.async {
+                handler(result)
+            }
+        }
+        
+        guard let url = Bundle.main.url(forResource: "movies", withExtension: "json") else {
+            fulfillCompletion(.failure(.invalidResponse))
+            return
+        }
+       
+        do {
+            let converter = FromOptionalResultToNonOptional()
+            let data = try Data(contentsOf: url)    
+            let decoder = JSONDecoder()
+            let model = try decoder.decode(MostPopularMoviesResult.self, from: data)
+            let items = model.items.compactMap { converter.convert(result: $0) }
+            guard !items.isEmpty else {
+                fulfillCompletion(.failure(.itemsEmpty))
+                return
+            }
+            fulfillCompletion(.success(items))
+        } catch {
+            fulfillCompletion(.failure(.parsingError))
         }
     }
 }

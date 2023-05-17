@@ -37,17 +37,13 @@ final class MovieQuizViewControllerProtocolSpy: MovieQuizViewControllerProtocol 
 final class QuestionFactorySpy: QuestionFactoryProtocol {
     var requestNextQuestionCalled = false
     
-    func loadData() {
-        
-    }
+    func loadData() {}
     
     func requestNextQuestion() {
         requestNextQuestionCalled = true
     }
     
-    func setDelegate(delegate: MovieQuiz.QuestionFactoryDelegate) {
-        
-    }
+    func setDelegate(delegate: MovieQuiz.QuestionFactoryDelegate) {}
 }
 
 final class MovieQuizPresenterTests: XCTestCase {
